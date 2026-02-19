@@ -1,0 +1,10 @@
+{
+  "id": "ralph",
+  "name": "Ralph Wiggum",
+  "version": "0.1.0",
+  "description": "Set up and manage Ralph Wiggum autonomous development loops",
+  "slots": ["toolbar"],
+  "min_app_version": "0.3.53",
+  "required_commands": [],
+  "api_version": 1
+}
