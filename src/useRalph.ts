@@ -423,11 +423,14 @@ export function useRalph(): RalphState {
 
   const stopRalph = useCallback(async () => {
     const sh = shellRef.current;
+    // Send SIGTERM (stronger than SIGINT) and kill the whole process group
     if (pidRef.current > 0) {
-      await sh.exec('kill', ['-INT', String(pidRef.current)]);
-    } else {
-      await sh.exec('pkill', ['-INT', '-f', 'ralph_loop']);
+      await sh.exec('kill', ['-TERM', String(pidRef.current)]);
+      // Kill the process group too in case of child processes
+      await sh.exec('bash', ['-c', `kill -TERM -${pidRef.current} 2>/dev/null; true`]);
     }
+    // Also kill any lingering ralph processes by name
+    await sh.exec('bash', ['-c', 'pkill -TERM -f "ralph.*--live" 2>/dev/null; pkill -TERM -f "ralph_loop" 2>/dev/null; true']);
     pidRef.current = 0;
     // Clear running state from storage
     try {
@@ -436,7 +439,7 @@ export function useRalph(): RalphState {
     } catch {
       // Best effort
     }
-    toastRef.current('Stop signal sent', 'success');
+    toastRef.current('Ralph stopped', 'success');
     setPhase('ready');
   }, []);
 

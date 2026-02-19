@@ -350,17 +350,17 @@ function useRalph() {
   const stopRalph = useCallback(async () => {
     const sh = shellRef.current;
     if (pidRef.current > 0) {
-      await sh.exec("kill", ["-INT", String(pidRef.current)]);
-    } else {
-      await sh.exec("pkill", ["-INT", "-f", "ralph_loop"]);
+      await sh.exec("kill", ["-TERM", String(pidRef.current)]);
+      await sh.exec("bash", ["-c", `kill -TERM -${pidRef.current} 2>/dev/null; true`]);
     }
+    await sh.exec("bash", ["-c", 'pkill -TERM -f "ralph.*--live" 2>/dev/null; pkill -TERM -f "ralph_loop" 2>/dev/null; true']);
     pidRef.current = 0;
     try {
       const storageData = await storageRef.current.read();
       await storageRef.current.write({ ...storageData, running: false, pid: 0 });
     } catch {
     }
-    toastRef.current("Stop signal sent", "success");
+    toastRef.current("Ralph stopped", "success");
     setPhase("ready");
   }, []);
   const refresh = useCallback(async () => {
