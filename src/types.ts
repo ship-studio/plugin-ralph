@@ -1,4 +1,4 @@
-export type RalphPhase = 'loading' | 'not-installed' | 'not-enabled' | 'ready' | 'running';
+export type RalphPhase = 'loading' | 'no-claude' | 'not-installed' | 'not-enabled' | 'ready' | 'running';
 
 export interface RalphStatus {
   status: string;

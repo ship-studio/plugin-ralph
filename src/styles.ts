@@ -20,6 +20,11 @@ export const RALPH_CSS = `
   50% { transform: scale(1.3); opacity: 0.7; }
 }
 
+/* Toolbar button disabled state */
+.rw-toolbar-disabled {
+  opacity: 0.3 !important;
+}
+
 /* Toolbar button running state */
 .rw-toolbar-running {
   background: rgba(59, 130, 246, 0.25) !important;

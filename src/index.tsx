@@ -24,6 +24,7 @@ function useInjectStyles() {
 function statusTitle(phase: RalphPhase): string {
   switch (phase) {
     case 'loading': return 'Ralph: Checking...';
+    case 'no-claude': return 'Ralph: Claude Code required';
     case 'not-installed': return 'Ralph: Not installed';
     case 'not-enabled': return 'Ralph: Click to set up';
     case 'ready': return 'Ralph: Ready';
@@ -34,6 +35,7 @@ function statusTitle(phase: RalphPhase): string {
 function modalTitle(phase: RalphPhase): string {
   switch (phase) {
     case 'loading': return 'Ralph Wiggum';
+    case 'no-claude': return 'Ralph Wiggum';
     case 'not-installed': return 'Install Ralph';
     case 'not-enabled': return 'Set Up Ralph';
     case 'ready': return 'Ralph Wiggum';
@@ -49,7 +51,7 @@ function RalphToolbar() {
   return (
     <>
       <button
-        className={`toolbar-icon-btn${ralph.phase === 'running' ? ' rw-toolbar-running' : ''}`}
+        className={`toolbar-icon-btn${ralph.phase === 'running' ? ' rw-toolbar-running' : ralph.phase === 'no-claude' ? ' rw-toolbar-disabled' : ''}`}
         title={statusTitle(ralph.phase)}
         onClick={() => setShowModal(true)}
         style={{ position: 'relative' }}
@@ -70,6 +72,11 @@ function RalphToolbar() {
           {ralph.phase === 'loading' && (
             <div style={{ textAlign: 'center', padding: 20 }}>
               <span className="rw-spinner" style={{ width: 20, height: 20 }} />
+            </div>
+          )}
+          {ralph.phase === 'no-claude' && (
+            <div style={{ padding: '8px 0', fontSize: 13, lineHeight: 1.6, opacity: 0.7 }}>
+              You must have <strong>Claude Code</strong> installed to use the Ralph Wiggum plugin.
             </div>
           )}
           {ralph.phase === 'not-installed' && <InstallView ralph={ralph} onClose={() => setShowModal(false)} />}

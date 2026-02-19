@@ -123,6 +123,13 @@ export function useRalph(): RalphState {
       return;
     }
 
+    // Check if Claude Code is installed
+    const claudeCheck = await sh.exec('which', ['claude']);
+    if (claudeCheck.exit_code !== 0) {
+      setPhase('no-claude');
+      return;
+    }
+
     // Check if ralph CLI is installed
     const whichResult = await sh.exec('which', ['ralph']);
     if (whichResult.exit_code === 0) {
