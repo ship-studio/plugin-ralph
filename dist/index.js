@@ -330,8 +330,9 @@ function useRalph() {
     const pidFile = `${projectPath}/.ralph/.pid`;
     const launcher = [
       `cd "${projectPath}"`,
-      `(exec "${ralphPathRef.current}" --live > "${logFile}" 2>&1) &`,
-      `echo $! > "${pidFile}"`
+      `nohup "${ralphPathRef.current}" --live > "${logFile}" 2>&1 &`,
+      `echo $! > "${pidFile}"`,
+      `disown`
     ].join("\n");
     await sh.exec("bash", ["-c", launcher], { timeout: 5e3 });
     const pidResult = await sh.exec("cat", [pidFile]);

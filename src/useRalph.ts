@@ -394,13 +394,14 @@ export function useRalph(): RalphState {
     ]);
 
     // Start ralph as a fully detached background process.
-    // Write PID to file since sh.exec may block on child stdout.
+    // nohup + disown ensures it survives after the shell session exits.
     const logFile = `${projectPath}/.ralph/output.log`;
     const pidFile = `${projectPath}/.ralph/.pid`;
     const launcher = [
       `cd "${projectPath}"`,
-      `(exec "${ralphPathRef.current}" --live > "${logFile}" 2>&1) &`,
+      `nohup "${ralphPathRef.current}" --live > "${logFile}" 2>&1 &`,
       `echo $! > "${pidFile}"`,
+      `disown`,
     ].join('\n');
 
     await sh.exec('bash', ['-c', launcher], { timeout: 5000 });
