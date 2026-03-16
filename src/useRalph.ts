@@ -87,6 +87,8 @@ export function useRalph(): RalphState {
   const actions = useAppActions();
   const storage = usePluginStorage();
 
+  const contextReady = !!(shell && actions && storage);
+
   // Use refs for unstable context values to keep callbacks stable
   const shellRef = useRef(shell);
   shellRef.current = shell;
@@ -118,7 +120,7 @@ export function useRalph(): RalphState {
   const detect = useCallback(async () => {
     const sh = shellRef.current;
     const store = storageRef.current;
-    if (!projectPath) {
+    if (!sh || !store || !projectPath) {
       setPhase('not-installed');
       return;
     }
@@ -212,10 +214,11 @@ export function useRalph(): RalphState {
     }
 
     setPhase('ready');
-  }, [projectPath]);
+  }, [projectPath, contextReady]);
 
   const checkPrereqs = useCallback(async () => {
     const sh = shellRef.current;
+    if (!sh) return;
     const [claudeResult, gitResult, nodeResult, jqResult, coreutilsResult] = await Promise.all([
       sh.exec('which', ['claude']),
       sh.exec('which', ['git']),
@@ -232,10 +235,10 @@ export function useRalph(): RalphState {
     });
   }, []);
 
-  // Initial detection - runs once
+  // Initial detection - runs once context is ready
   useEffect(() => {
-    detect();
-  }, [detect]);
+    if (contextReady) detect();
+  }, [detect, contextReady]);
 
   // Check prereqs when on not-installed phase
   useEffect(() => {
@@ -301,6 +304,7 @@ export function useRalph(): RalphState {
   }, [phase, projectPath]);
 
   const install = useCallback(() => {
+    if (!actionsRef.current) return;
     const script = [
       'set -e',
       'echo "Checking dependencies..."',
@@ -330,6 +334,7 @@ export function useRalph(): RalphState {
   ) => {
     if (!projectPath) return;
     const sh = shellRef.current;
+    if (!sh) return;
 
     await sh.exec('mkdir', ['-p', `${projectPath}/.ralph`]);
 
@@ -354,16 +359,17 @@ export function useRalph(): RalphState {
     ]);
 
     if (p1 && p2 && p3 && p4) {
-      toastRef.current('Ralph enabled', 'success');
+      toastRef.current?.('Ralph enabled', 'success');
       await detect();
     } else {
-      toastRef.current('Failed to write config files', 'error');
+      toastRef.current?.('Failed to write config files', 'error');
     }
   }, [projectPath, detect]);
 
   const startRalph = useCallback(async (form: { goals: string; tasks: string; rateLimit: number; timeout: number }) => {
     const sh = shellRef.current;
     const store = storageRef.current;
+    if (!sh || !store) return;
 
     // Ensure .ralph dir exists
     await sh.exec('mkdir', ['-p', `${projectPath}/.ralph`]);
@@ -423,6 +429,7 @@ export function useRalph(): RalphState {
 
   const stopRalph = useCallback(async () => {
     const sh = shellRef.current;
+    if (!sh) return;
     // Send SIGTERM (stronger than SIGINT) and kill the whole process group
     if (pidRef.current > 0) {
       await sh.exec('kill', ['-TERM', String(pidRef.current)]);
@@ -439,7 +446,7 @@ export function useRalph(): RalphState {
     } catch {
       // Best effort
     }
-    toastRef.current('Ralph stopped', 'success');
+    toastRef.current?.('Ralph stopped', 'success');
     setPhase('ready');
   }, []);
 

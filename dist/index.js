@@ -8,25 +8,31 @@ function usePluginContext() {
     const ctx = React.useContext(CtxRef);
     if (ctx) return ctx;
   }
-  throw new Error("Plugin context not available.");
+  return null;
 }
 function useProject() {
-  return usePluginContext().project;
+  var _a;
+  return ((_a = usePluginContext()) == null ? void 0 : _a.project) ?? null;
 }
 function useShell() {
-  return usePluginContext().shell;
+  var _a;
+  return ((_a = usePluginContext()) == null ? void 0 : _a.shell) ?? null;
 }
 function useToast() {
-  return usePluginContext().actions.showToast;
+  var _a;
+  return ((_a = usePluginContext()) == null ? void 0 : _a.actions.showToast) ?? null;
 }
 function usePluginStorage() {
-  return usePluginContext().storage;
+  var _a;
+  return ((_a = usePluginContext()) == null ? void 0 : _a.storage) ?? null;
 }
 function useAppActions() {
-  return usePluginContext().actions;
+  var _a;
+  return ((_a = usePluginContext()) == null ? void 0 : _a.actions) ?? null;
 }
 function useTheme() {
-  return usePluginContext().theme;
+  var _a;
+  return ((_a = usePluginContext()) == null ? void 0 : _a.theme) ?? null;
 }
 function parseRalphrc(raw) {
   const config = {};
@@ -94,6 +100,7 @@ function useRalph() {
   const showToast = useToast();
   const actions = useAppActions();
   const storage = usePluginStorage();
+  const contextReady = !!(shell && actions && storage);
   const shellRef = useRef(shell);
   shellRef.current = shell;
   const actionsRef = useRef(actions);
@@ -115,7 +122,7 @@ function useRalph() {
   const detect = useCallback(async () => {
     const sh = shellRef.current;
     const store = storageRef.current;
-    if (!projectPath) {
+    if (!sh || !store || !projectPath) {
       setPhase("not-installed");
       return;
     }
@@ -186,9 +193,10 @@ function useRalph() {
       return;
     }
     setPhase("ready");
-  }, [projectPath]);
+  }, [projectPath, contextReady]);
   const checkPrereqs = useCallback(async () => {
     const sh = shellRef.current;
+    if (!sh) return;
     const [claudeResult, gitResult, nodeResult, jqResult, coreutilsResult] = await Promise.all([
       sh.exec("which", ["claude"]),
       sh.exec("which", ["git"]),
@@ -205,8 +213,8 @@ function useRalph() {
     });
   }, []);
   useEffect(() => {
-    detect();
-  }, [detect]);
+    if (contextReady) detect();
+  }, [detect, contextReady]);
   useEffect(() => {
     if (phase === "not-installed") {
       checkPrereqs();
@@ -255,6 +263,7 @@ function useRalph() {
     }
   }, [phase, projectPath]);
   const install = useCallback(() => {
+    if (!actionsRef.current) return;
     const script = [
       "set -e",
       'echo "Checking dependencies..."',
@@ -276,8 +285,10 @@ function useRalph() {
     actionsRef.current.openTerminal("bash", ["-c", script], { title: "Install Ralph" });
   }, []);
   const enable = useCallback(async (goals, tasks, rateLimit, timeout) => {
+    var _a, _b;
     if (!projectPath) return;
     const sh = shellRef.current;
+    if (!sh) return;
     await sh.exec("mkdir", ["-p", `${projectPath}/.ralph`]);
     const rcContent = serializeRalphrc({
       MAX_CALLS_PER_HOUR: String(rateLimit),
@@ -296,15 +307,16 @@ function useRalph() {
       writeFile(sh, `${projectPath}/.ralphrc`, rcContent)
     ]);
     if (p1 && p2 && p3 && p4) {
-      toastRef.current("Ralph enabled", "success");
+      (_a = toastRef.current) == null ? void 0 : _a.call(toastRef, "Ralph enabled", "success");
       await detect();
     } else {
-      toastRef.current("Failed to write config files", "error");
+      (_b = toastRef.current) == null ? void 0 : _b.call(toastRef, "Failed to write config files", "error");
     }
   }, [projectPath, detect]);
   const startRalph = useCallback(async (form) => {
     const sh = shellRef.current;
     const store = storageRef.current;
+    if (!sh || !store) return;
     await sh.exec("mkdir", ["-p", `${projectPath}/.ralph`]);
     const rcContent = serializeRalphrc({
       MAX_CALLS_PER_HOUR: String(form.rateLimit),
@@ -348,7 +360,9 @@ function useRalph() {
     setPhase("running");
   }, [projectPath]);
   const stopRalph = useCallback(async () => {
+    var _a;
     const sh = shellRef.current;
+    if (!sh) return;
     if (pidRef.current > 0) {
       await sh.exec("kill", ["-TERM", String(pidRef.current)]);
       await sh.exec("bash", ["-c", `kill -TERM -${pidRef.current} 2>/dev/null; true`]);
@@ -360,7 +374,7 @@ function useRalph() {
       await storageRef.current.write({ ...storageData, running: false, pid: 0 });
     } catch {
     }
-    toastRef.current("Ralph stopped", "success");
+    (_a = toastRef.current) == null ? void 0 : _a.call(toastRef, "Ralph stopped", "success");
     setPhase("ready");
   }, []);
   const refresh = useCallback(async () => {
