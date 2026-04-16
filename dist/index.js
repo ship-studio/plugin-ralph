@@ -8,6 +8,8 @@ function usePluginContext() {
     const ctx = React.useContext(CtxRef);
     if (ctx) return ctx;
   }
+  const directCtx = _w.__SHIPSTUDIO_PLUGIN_CONTEXT__;
+  if (directCtx) return directCtx;
   return null;
 }
 function useProject() {
